@@ -1,61 +1,38 @@
-import os
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.preprocessing import MinMaxScaler
 
-
 class Data:
-    def __init__(self):
-        self.dataframe = pd.DataFrame([])
+    def _init_(self):
+        self.dataframe = None
+        self.scaler = MinMaxScaler(feature_range=(0, 1))
 
-    def read(self, file_name: str):
-        """Reads a CSV file into the dataframe."""
-        if os.path.exists(file_name):
-            self.dataframe = pd.read_csv(file_name)
-            print(f"Data successfully read from {file_name}.")
-        else:
-            print(f"Error: The file {file_name} does not exist.")
+    def read(self, file_path):
+        self.dataframe = pd.read_csv(file_path)
+        self.dataframe[Column.DATE.value] = pd.to_datetime(self.dataframe[Column.DATE.value])
+        self.dataframe.set_index(Column.DATE.value, inplace=True)
 
     def check_null_values(self):
-        """Checks for null values in the dataframe."""
-        print("Null Values Before Cleaning:")
         print(self.dataframe.isnull().sum())
 
     def clean_data(self):
-        """Removes null values from the dataframe."""
-        initial_shape = self.dataframe.shape
         self.dataframe.dropna(inplace=True)
-        final_shape = self.dataframe.shape
-        print(f"Data cleaned: {initial_shape[0] - final_shape[0]} rows removed.")
+
+    def normalize(self):
+        self.dataframe[Column.CLOSE.value] = self.scaler.fit_transform(self.dataframe[[Column.CLOSE.value]])
+        return self.dataframe, self.scaler
 
     def print_head(self):
-        """Prints the head of the dataframe."""
-        print("Head of the DataFrame:")
         print(self.dataframe.head())
 
     def print_description(self):
-        """Prints the description of the dataframe."""
-        print("\nDescription of the DataFrame:")
         print(self.dataframe.describe())
 
-    def normalize(self):
-        """Normalizes numeric columns in the dataframe."""
-        numeric_cols = self.dataframe.select_dtypes(include=['float64', 'int64']).columns
-        self.scaler = MinMaxScaler()
-        self.dataframe[numeric_cols] = self.scaler.fit_transform(self.dataframe[numeric_cols])
-        print(f"Data normalized for columns: {numeric_cols.tolist()}")
-
-    def visualize(self, y_label):
-        """Plots graph for open stock values vs. date."""
-        if 'Date' in self.dataframe.columns and y_label in self.dataframe.columns:
-            self.dataframe['Date'] = pd.to_datetime(self.dataframe['Date'])
-            plt.figure(figsize=(14, 7))
-            sns.lineplot(data=self.dataframe, x='Date', y=y_label)
-            plt.title(f'{y_label} Stock Values over the Years')
-            plt.xlabel('Date')
-            plt.ylabel(f'{y_label} Stock Value')
-            plt.show()
-        else:
-            print(f"Dataframe does not contain 'Date' and '{y_label}' columns.")
-
+    def visualize(self, column):
+        plt.figure(figsize=(14, 7))
+        plt.plot(self.dataframe.index, self.dataframe[column])
+        plt.xlabel('Date')
+        plt.ylabel(f'{column.capitalize()} Price (USD)')
+        plt.title(f'{column.capitalize()} Price Over Time')
+        plt.grid(True)
+        plt.show()
