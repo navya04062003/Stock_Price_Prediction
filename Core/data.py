@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 
 class Data:
-    def _init_(self):
+    def __init__(self):
         self.dataframe = None
         self.scaler = MinMaxScaler(feature_range=(0, 1))
 
