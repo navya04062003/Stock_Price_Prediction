@@ -11,12 +11,12 @@ def main():
     print(Column.OPEN.value)
     data.print_head()
     data.print_description()
-    scaled_data, scaler = data.normalize()
+    dataframe, scaler = data.normalize()
     data.visualize(Column.OPEN.value)
     data.visualize(Column.CLOSE.value)
 
     # Initialize LSTM Trainer
-    trainer = LSTM_Trainer(data.dataframe, scaler)
+    trainer = LSTM_Trainer(dataframe, scaler)
     trainer.build_and_train_lstm()
     trainer.predict_and_plot()
     trainer.evaluate_model()
