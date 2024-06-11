@@ -5,7 +5,7 @@ from Core.model import LSTM_Trainer
 def main():
     # Initialize Data object
     data = Data()
-    data.read('Data/AAPL.csv')
+    data.read('AAPL.csv')
     data.check_null_values()
     data.clean_data()
     print(Column.OPEN.value)
@@ -16,7 +16,7 @@ def main():
     data.visualize(Column.CLOSE.value)
 
     # Initialize LSTM Trainer
-    trainer = LSTM_Trainer(data.dataframe, data.scaler)
+    trainer = LSTM_Trainer(data.dataframe, scaler)
     trainer.build_and_train_lstm()
     trainer.predict_and_plot()
     trainer.evaluate_model()
