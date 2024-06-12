@@ -5,22 +5,19 @@ from sklearn.preprocessing import MinMaxScaler
 class Data:
     def __init__(self):
         self.dataframe = None
-        self.scaler = MinMaxScaler(feature_range=(0, 1))
+        self.scaler = None
 
     def read(self, file_path):
         self.dataframe = pd.read_csv(file_path)
-        self.dataframe[Column.DATE.value] = pd.to_datetime(self.dataframe[Column.DATE.value])
-        self.dataframe.set_index(Column.DATE.value, inplace=True)
 
     def check_null_values(self):
         print(self.dataframe.isnull().sum())
 
     def clean_data(self):
         self.dataframe.dropna(inplace=True)
-
-    def normalize(self):
-        self.dataframe[Column.CLOSE.value] = self.scaler.fit_transform(self.dataframe[[Column.CLOSE.value]])
-        return self.dataframe, self.scaler
+        self.dataframe['date'] = pd.to_datetime(self.dataframe['date'])
+        self.dataframe = self.dataframe.sort_values('date')
+        self.dataframe.set_index('date', inplace=True)
 
     def print_head(self):
         print(self.dataframe.head())
@@ -28,11 +25,16 @@ class Data:
     def print_description(self):
         print(self.dataframe.describe())
 
+    def normalize(self):
+        self.scaler = MinMaxScaler(feature_range=(0, 1))
+        self.dataframe['normalized_close'] = self.scaler.fit_transform(self.dataframe[['close']])
+
     def visualize(self, column):
         plt.figure(figsize=(14, 7))
-        plt.plot(self.dataframe.index, self.dataframe[column])
+        plt.plot(self.dataframe.index, self.dataframe[column], label=column)
         plt.xlabel('Date')
-        plt.ylabel(f'{column.capitalize()} Price (USD)')
-        plt.title(f'{column.capitalize()} Price Over Time')
+        plt.ylabel(f'{column} Price')
+        plt.title(f'{column} Price Over Time')
+        plt.legend()
         plt.grid(True)
         plt.show()
