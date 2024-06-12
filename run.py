@@ -3,7 +3,7 @@ from Core.config import Column
 from Core.model import LSTM_Trainer
 
 data = Data()
-data.read('Data/AAPL.csv')
+data.read('AAPL.csv')
 data.check_null_values()
 data.clean_data()
 data.print_head()
