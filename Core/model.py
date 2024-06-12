@@ -20,7 +20,7 @@ class LSTM_Trainer:
         x = np.reshape(x, (x.shape[0], x.shape[1], 1))
         return x, y
 
-    def build_and_train_lstm(self, epochs=100, batch_size=64, time_step=60):
+    def build_and_train_lstm(self, epochs=40, batch_size=64, time_step=60):
         # Prepare training and validation data
         scaled_data = self.dataframe['normalized_close'].values.reshape(-1, 1)
         train_size = int(len(scaled_data) * 0.7)
