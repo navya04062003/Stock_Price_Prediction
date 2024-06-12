@@ -32,13 +32,9 @@ class LSTM_Trainer:
 
         # Build LSTM model
         self.model = Sequential()
-        self.model.add(LSTM(units=100, return_sequences=True, input_shape=(x_train.shape[1], 1)))
-        self.model.add(Dropout(0.3))
-        self.model.add(LSTM(units=100, return_sequences=True))
-        self.model.add(Dropout(0.3))
-        self.model.add(LSTM(units=100, return_sequences=False))
-        self.model.add(Dropout(0.3))
-        self.model.add(Dense(1))
+        self.model.add(LSTM(units=60, return_sequences=True, input_shape=(x_train.shape[1], 1)))
+        self.model.add(LSTM(units=60, return_sequences=False))
+        self.model.add(Dense(units=1))
 
         self.model.compile(optimizer='adam', loss='mean_squared_error')
 
@@ -67,16 +63,17 @@ class LSTM_Trainer:
         test_predictions = self.scaler.inverse_transform(test_predictions)
         y_test_actual = self.scaler.inverse_transform(y_test_actual.reshape(-1, 1))
 
-        # Plot predictions vs actual
-        plt.figure(figsize=(14, 7))
-        plt.plot(self.dataframe.index[-len(y_test_actual):], y_test_actual, label='Actual Test Observations', color='blue')
-        plt.plot(self.dataframe.index[-len(test_predictions):], test_predictions, label='Test Predictions', color='orange')
-        plt.xlabel('Date')
-        plt.ylabel('Adjusted Close Price')
-        plt.title('Test Predictions vs Actual Test Observations')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
+        # Plot training predictions vs actual
+       plt.figure(figsize=(14, 7))
+       plt.plot(self.dataframe.index[60:60+len(y_train_actual)], y_train_actual, label='Actual Training Observations', color='blue')
+       plt.plot(self.dataframe.index[60:60+len(train_predictions)], train_predictions, label='Training Predictions', color='orange')
+       plt.xlabel('Date')
+       plt.ylabel('Adjusted Close Price (Scaled)')
+       plt.title('Training Predictions vs Actual Training Observations')
+       plt.legend()
+       plt.grid(True)
+       plt.show()
+
 
     def evaluate_model(self, time_step=60):
         scaled_data = self.dataframe['normalized_close'].values.reshape(-1, 1)
