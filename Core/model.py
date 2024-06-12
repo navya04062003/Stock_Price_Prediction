@@ -1,75 +1,91 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import mean_squared_error
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dropout, Dense
-import pickle
+from tensorflow.keras.layers import Dense, LSTM, Dropout
+from sklearn.metrics import mean_squared_error
 
 class LSTM_Trainer:
-    def _init_(self, dataframe, scaler):
+    def __init__(self, dataframe, scaler):
         self.dataframe = dataframe
         self.scaler = scaler
         self.model = None
-        self.x_train, self.y_train, self.x_test, self.y_test_actual = self.prepare_data()
+        self.history = None
 
-    def prepare_data(self, time_step=60):
-        data = self.dataframe[Column.CLOSE.value].values
+    def prepare_data(self, data, time_step=60):
         x, y = [], []
         for i in range(time_step, len(data)):
-            x.append(data[i-time_step:i])
-            y.append(data[i])
+            x.append(data[i-time_step:i, 0])
+            y.append(data[i, 0])
         x, y = np.array(x), np.array(y)
         x = np.reshape(x, (x.shape[0], x.shape[1], 1))
-        
-        train_size = int(len(x) * 0.8)
-        x_train, y_train = x[:train_size], y[:train_size]
-        x_test, y_test_actual = x[train_size:], y[train_size:]
-        
-        return x_train, y_train, x_test, y_test_actual
+        return x, y
 
-    def build_and_train_lstm(self, epochs=100, batch_size=64):
+    def build_and_train_lstm(self, epochs=100, batch_size=64, time_step=60):
+        # Prepare training and validation data
+        scaled_data = self.dataframe['normalized_close'].values.reshape(-1, 1)
+        train_size = int(len(scaled_data) * 0.7)
+        val_size = int(len(scaled_data) * 0.15)
+        train_data = scaled_data[:train_size]
+        val_data = scaled_data[train_size:train_size + val_size]
+        x_train, y_train = self.prepare_data(train_data, time_step)
+        x_val, y_val = self.prepare_data(val_data, time_step)
+
+        # Build LSTM model
         self.model = Sequential()
-        self.model.add(LSTM(100, return_sequences=True, input_shape=(self.x_train.shape[1], 1)))
+        self.model.add(LSTM(units=100, return_sequences=True, input_shape=(x_train.shape[1], 1)))
         self.model.add(Dropout(0.3))
-        self.model.add(LSTM(100, return_sequences=True))
+        self.model.add(LSTM(units=100, return_sequences=True))
         self.model.add(Dropout(0.3))
-        self.model.add(LSTM(100, return_sequences=False))
+        self.model.add(LSTM(units=100, return_sequences=False))
         self.model.add(Dropout(0.3))
         self.model.add(Dense(1))
+
         self.model.compile(optimizer='adam', loss='mean_squared_error')
 
-        self.model.fit(self.x_train, self.y_train, epochs=epochs, batch_size=batch_size, verbose=1, validation_split=0.2)
+        # Train the model
+        self.history = self.model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=(x_val, y_val), verbose=1)
 
-    def predict_and_plot(self):
-        predictions = self.model.predict(self.x_test)
-        predictions = self.scaler.inverse_transform(predictions)
-        y_test_actual = self.scaler.inverse_transform(self.y_test_actual.reshape(-1, 1))
+    def predict_and_plot(self, time_step=60):
+        scaled_data = self.dataframe['normalized_close'].values.reshape(-1, 1)
+        test_data = scaled_data[int(len(scaled_data) * 0.85) - time_step:]
+        x_test, y_test_actual = self.prepare_data(test_data, time_step)
 
+        # Make predictions on test data
+        test_predictions = self.model.predict(x_test)
+        test_predictions = self.scaler.inverse_transform(test_predictions)
+        y_test_actual = self.scaler.inverse_transform(y_test_actual.reshape(-1, 1))
+
+        # Plot predictions vs actual
         plt.figure(figsize=(14, 7))
-        plt.plot(self.dataframe.index[-len(y_test_actual):], y_test_actual, label='Actual Prices')
-        plt.plot(self.dataframe.index[-len(predictions):], predictions, label='Predicted Prices')
+        plt.plot(self.dataframe.index[-len(y_test_actual):], y_test_actual, label='Actual Test Observations', color='blue')
+        plt.plot(self.dataframe.index[-len(test_predictions):], test_predictions, label='Test Predictions', color='orange')
         plt.xlabel('Date')
-        plt.ylabel('Price (USD)')
-        plt.title('Actual vs Predicted Prices')
+        plt.ylabel('Adjusted Close Price')
+        plt.title('Test Predictions vs Actual Test Observations')
         plt.legend()
         plt.grid(True)
         plt.show()
 
-    def evaluate_model(self):
-        predictions = self.model.predict(self.x_test)
-        predictions = self.scaler.inverse_transform(predictions)
-        y_test_actual = self.scaler.inverse_transform(self.y_test_actual.reshape(-1, 1))
+    def evaluate_model(self, time_step=60):
+        scaled_data = self.dataframe['normalized_close'].values.reshape(-1, 1)
+        train_data = scaled_data[:int(len(scaled_data) * 0.7)]
+        x_train, y_train = self.prepare_data(train_data, time_step)
+        train_predictions = self.model.predict(x_train)
+        train_predictions = self.scaler.inverse_transform(train_predictions)
+        y_train_actual = self.scaler.inverse_transform(y_train.reshape(-1, 1))
 
-        rmse = np.sqrt(mean_squared_error(y_test_actual, predictions))
-        mse = mean_squared_error(y_test_actual, predictions)
+        test_data = scaled_data[int(len(scaled_data) * 0.85) - time_step:]
+        x_test, y_test_actual = self.prepare_data(test_data, time_step)
+        test_predictions = self.model.predict(x_test)
+        test_predictions = self.scaler.inverse_transform(test_predictions)
+        y_test_actual = self.scaler.inverse_transform(y_test_actual.reshape(-1, 1))
 
-        print(f'RMSE: {rmse}')
-        print(f'MSE: {mse}')
+        train_rmse = np.sqrt(mean_squared_error(y_train_actual, train_predictions))
+        train_mse = mean_squared_error(y_train_actual, train_predictions)
+        print(f'Training RMSE: {train_rmse}')
+        print(f'Training MSE: {train_mse}')
 
-    def save_model(self, filename):
-        with open(filename, 'wb') as file:
-            pickle.dump(self.model, file)
-
-    def load_model(self, filename):
-        with open(filename, 'rb') as file:
-            self.model = pickle.load(file)
+        test_rmse = np.sqrt(mean_squared_error(y_test_actual, test_predictions))
+        test_mse = mean_squared_error(y_test_actual, test_predictions)
+        print(f'Test RMSE: {test_rmse}')
+        print(f'Test MSE: {test_mse}')
