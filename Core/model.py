@@ -42,6 +42,7 @@ class LSTM_Trainer:
         self.history = self.model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=(x_val, y_val), verbose=1)
 
     def plot_training_history(self):
+        
         # Plot training & validation loss values
         plt.figure(figsize=(14, 7))
         plt.plot(self.history.history['loss'], label='Training Loss')
@@ -64,15 +65,15 @@ class LSTM_Trainer:
         y_test_actual = self.scaler.inverse_transform(y_test_actual.reshape(-1, 1))
 
         # Plot training predictions vs actual
-       plt.figure(figsize=(14, 7))
-       plt.plot(self.dataframe.index[60:60+len(y_train_actual)], y_train_actual, label='Actual Training Observations', color='blue')
-       plt.plot(self.dataframe.index[60:60+len(train_predictions)], train_predictions, label='Training Predictions', color='orange')
-       plt.xlabel('Date')
-       plt.ylabel('Adjusted Close Price (Scaled)')
-       plt.title('Training Predictions vs Actual Training Observations')
-       plt.legend()
-       plt.grid(True)
-       plt.show()
+        plt.figure(figsize=(14, 7))
+        plt.plot(self.dataframe.index[60:60+len(y_train_actual)], y_train_actual, label='Actual Training Observations', color='blue')
+        plt.plot(self.dataframe.index[60:60+len(train_predictions)], train_predictions, label='Training Predictions', color='orange')
+        plt.xlabel('Date')
+        plt.ylabel('Adjusted Close Price (Scaled)')
+        plt.title('Training Predictions vs Actual Training Observations')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
 
 
     def evaluate_model(self, time_step=60):
