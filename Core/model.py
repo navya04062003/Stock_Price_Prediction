@@ -45,6 +45,18 @@ class LSTM_Trainer:
         # Train the model
         self.history = self.model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=(x_val, y_val), verbose=1)
 
+    def plot_training_history(self):
+        # Plot training & validation loss values
+        plt.figure(figsize=(14, 7))
+        plt.plot(self.history.history['loss'], label='Training Loss')
+        plt.plot(self.history.history['val_loss'], label='Validation Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.title('Model Loss Over Epochs')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
     def predict_and_plot(self, time_step=60):
         scaled_data = self.dataframe['normalized_close'].values.reshape(-1, 1)
         test_data = scaled_data[int(len(scaled_data) * 0.85) - time_step:]
